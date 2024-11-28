@@ -1,1 +1,1 @@
-# Data-Science-and-Visualization
+The aim of this project is to utilize visualization and analytical skills in everyday life activities. Over a 16-day period, I gathered sleep pattern data from my family members to analyze and visualize it. Additionally, I conducted hypothesis testing to determine whether Americans are getting adequate sleep based on the collected data.
