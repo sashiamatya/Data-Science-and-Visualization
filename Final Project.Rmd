@@ -1,0 +1,388 @@
+---
+title: "Final Project"
+author: "Sashi R Amatya"
+date: "2024-11-14"
+output:
+  word_document: default
+  pdf_document: default
+always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Importing libraries
+```{r}
+library(tidyverse)
+library(readxl)
+library(ggplot2)
+library(data.table)
+library(plotly)
+```
+
+# Reading excel file
+# and then converting Sleep duration to decimal hour format so that 
+# 9 hour 30 minutes will show as 9.5 hrs for analysis purpose
+```{r}
+sleep_data <- read_excel("~/Library/CloudStorage/OneDrive-Personal/SASHI - DATA 211/FINAL PROJECT - SLEEP/Sleep Data - Hours slept.xlsx")
+head(sleep_data,3)
+
+# Converting "Sleep Duration" to Hours and Minutes format.
+# 9 hours 30 minutes with date will save as = 930
+sleep_data$`Sleep Duration`<-
+  as.numeric(format(as.POSIXct(sleep_data$`Sleep Duration`),format = "%H%M", units="minutes") )
+print(sleep_data)
+# Converting "Sleep Duration" minutes to percentage of minute format
+# 930 (9 hours 30 minutes) from previous step will now convert to ~9.5 hours 
+for(i in 1:nrow(sleep_data)){
+  sleep_data$`Sleep Duration`[i] <- (sleep_data$`Sleep Duration`[i]%/%100) + 
+          ((sleep_data$`Sleep Duration`[i]%%100)*0.0166)
+}
+print(sleep_data)
+# class(sleep_data$`Sleep Duration`)
+```
+
+
+# Calculating total average sleep per person
+```{r}
+
+# Average sleep per person total
+avg_sleep <- sleep_data %>%
+  group_by(Participant) %>%
+  summarise(AverageSleep = mean(`Sleep Duration`)) 
+
+# Graphing - Average sleep per person total
+avg_sleep_graph <- avg_sleep%>%
+  ggplot(aes(x=Participant, y = AverageSleep)) +
+  geom_bar(stat = "identity", aes(fill=Participant)) +
+  geom_text(aes(label=round(AverageSleep,2))) 
+print(avg_sleep_graph)
+
+ggplotly(avg_sleep_graph)
+  
+```
+
+
+
+
+
+# Calculating total average sleep per person on Day Offs VS No Day Offs
+```{r}
+# Average sleep per person on Day Offs and No Day Offs
+avg_sleep_dayoff_yes_no <- sleep_data %>%
+  group_by(Participant,`Day Off`) %>%
+  summarise(AverageSleep = mean(`Sleep Duration`))
+print(avg_sleep_dayoff_yes_no)
+
+
+# Graphing - Average sleep per person on Day Offs and No Day Offs
+avg_sleep_dayoff_yes_no_graph <- sleep_data %>%
+  group_by(Participant,`Day Off`) %>%
+  summarise(AverageSleep = mean(`Sleep Duration`)) %>% 
+  ggplot(aes(x=Participant, y=AverageSleep, fill = `Day Off`)) +
+  geom_bar(stat = "identity", position=position_dodge(width=0.9)) +
+  geom_text(aes(label=round(AverageSleep,2)),position=position_dodge(width=0.9)) +
+  scale_x_discrete(labels= c("Bishesta"="Bishesta (16 Yrs)","Prashansa"="Prashansa (8 Yrs)", "Rashmina"="Rashmina (43 Yrs)", "Sashi"="Sashi (42 Yrs)")) +
+  labs(x="Participants",
+       y="Sleep Duration in Hrs")
+
+print(avg_sleep_dayoff_yes_no_graph)
+
+ggplotly(avg_sleep_dayoff_yes_no_graph)
+
+# Add another graph with mutated column
+
+```
+
+
+
+# Sleep data of Sashi
+```{r}
+# All Sleep Data for Sashi
+sleep_data_Sashi <- sleep_data %>%
+  filter(Participant == "Sashi") %>%
+  select(Participant,Date,Day,`Day Off`,`Sleep Duration`) 
+print(sleep_data_Sashi)
+
+# Sleeping pattern graph
+sleep_data_Sashi_graph <- sleep_data_Sashi %>%
+  ggplot(aes(x=Date, y=`Sleep Duration`)) +
+  geom_line(color="purple") +
+  geom_point(aes(color=`Day Off`)) +
+  ylim(c(4,12)) +
+  scale_x_continuous(breaks=sleep_data_Sashi$Date) +
+  theme(axis.text.x = element_text(angle=45, hjust=1))+
+  labs(title="Sashi")
+ggplotly(sleep_data_Sashi_graph)
+
+
+```
+
+```{r}
+# Comparing amount of sleep during work day and non-working days
+sleep_data_Sashi %>%
+  ggplot(aes(x=Date, y=`Sleep Duration`)) +
+  geom_line(aes(group=`Day Off`, color=`Day Off`))+
+  ylim(c(4,12)) +
+  scale_x_continuous(breaks=sleep_data_Sashi$Date) +
+  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  labs(title="Sashi")
+```
+
+```{r}
+# Sleep Duration on Day Offs
+sleep_data_Sashi_day_off <- sleep_data_Sashi %>%
+  filter(Participant == "Sashi" & `Day Off`=="Yes") %>%
+  select(Participant,Date,Day,`Day Off`,`Sleep Duration`)
+# Sleep Duration on Day Offs - Graph
+sleep_data_Sashi_day_off %>%
+  ggplot(aes(x=Date, y=`Sleep Duration`))+
+  geom_line(color="red") +
+  geom_point(color="blue") +
+  ylim(c(4,12)) +
+  scale_x_continuous(breaks=sleep_data_Sashi$Date) +
+  theme(axis.text.x = element_text(angle=45, hjust=1))
+
+
+```
+
+```{r}
+# Sleep Duration on Work Day
+sleep_data_Sashi_day_off_no <- sleep_data_Sashi %>%
+  filter(Participant == "Sashi" & `Day Off`=="No") %>%
+  select(Participant,Date,Day,`Day Off`,`Sleep Duration`)
+# Sleep Duration on Work Day - Graph
+sleep_data_Sashi_day_off_no %>%
+  ggplot(aes(x=Date, y=`Sleep Duration`))+
+  geom_line(color="red") +
+  geom_point(color="red") +
+  ylim(c(4,12))  +
+  scale_x_continuous(breaks=sleep_data_Sashi$Date) +
+  theme(axis.text.x = element_text(angle=45, hjust=1))
+
+```
+
+
+# Sleep Data for Rashmina
+
+```{r}
+# All Sleep Data for Rashmina
+sleep_data_Rashmina <- sleep_data %>%
+  filter(Participant == "Rashmina") %>%
+  select(Participant,Date,Day,`Day Off`,`Sleep Duration`) 
+print(sleep_data_Rashmina)
+
+# Sleeping pattern graph
+sleep_data_Rashmina_graph <- sleep_data_Rashmina %>%
+  ggplot(aes(x=Date, y=`Sleep Duration`)) +
+  geom_line(color="purple") +
+  geom_point(aes(color=`Day Off`)) +
+  ylim(c(4,12)) +
+  scale_x_continuous(breaks=sleep_data_Rashmina$Date) +
+  theme(axis.text.x = element_text(angle=45, hjust=1))+
+  labs(title="Rashmina")
+ggplotly(sleep_data_Rashmina_graph)
+```
+
+```{r}
+# Comparing amount of sleep during work day and non-working days
+sleep_data_Rashmina %>%
+  ggplot(aes(x=Date, y=`Sleep Duration`)) +
+  geom_line(aes(group=`Day Off`, color=`Day Off`))+
+  ylim(c(4,12)) +
+  scale_x_continuous(breaks=sleep_data_Rashmina$Date) +
+  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  labs(title="Rashmina")
+```
+
+
+```{r}
+# Sleep Duration on Day Offs
+sleep_data_Rashmina_day_off <- sleep_data_Rashmina %>%
+  filter(Participant == "Rashmina" & `Day Off`=="Yes") %>%
+  select(Participant,Date,Day,`Day Off`,`Sleep Duration`)
+# Sleep Duration on Day Offs - Graph
+sleep_data_Rashmina_day_off %>%
+  ggplot(aes(x=Date, y=`Sleep Duration`))+
+  geom_line(color="red") +
+  geom_point(color="blue") +
+  ylim(c(4,12)) +
+  scale_x_continuous(breaks=sleep_data_Rashmina$Date) +
+  theme(axis.text.x = element_text(angle=45, hjust=1))
+
+
+```
+
+```{r}
+# Sleep Duration on Work Day
+sleep_data_Rashmina_day_off_no <- sleep_data_Rashmina %>%
+  filter(Participant == "Rashmina" & `Day Off`=="No") %>%
+  select(Participant,Date,Day,`Day Off`,`Sleep Duration`)
+# Sleep Duration on Work Day - Graph
+sleep_data_Rashmina_day_off_no %>%
+  ggplot(aes(x=Date, y=`Sleep Duration`))+
+  geom_line(color="red") +
+  geom_point(color="red") +
+  ylim(c(4,12))  +
+  scale_x_continuous(breaks=sleep_data_Rashmina$Date) +
+  theme(axis.text.x = element_text(angle=45, hjust=1))
+
+```
+
+# Sleep data for Bishesta
+
+```{r}
+# All Sleep Data for Bishesta
+sleep_data_Bishesta <- sleep_data %>%
+  filter(Participant == "Bishesta") %>%
+  select(Participant,Date,Day,`Day Off`,`Sleep Duration`) 
+print(sleep_data_Bishesta)
+
+# Sleeping pattern graph
+sleep_data_Bishesta_graph <- sleep_data_Bishesta %>%
+  ggplot(aes(x=Date, y=`Sleep Duration`)) +
+  geom_line(color="purple") +
+  geom_point(aes(color=`Day Off`)) +
+  ylim(c(4,12)) +
+  scale_x_continuous(breaks=sleep_data_Bishesta$Date) +
+  theme(axis.text.x = element_text(angle=45, hjust=1))+
+  labs(title="Bishesta")
+ggplotly(sleep_data_Bishesta_graph)
+```
+
+```{r}
+# Comparing amount of sleep during work day and non-working days
+sleep_data_Bishesta %>%
+  ggplot(aes(x=Date, y=`Sleep Duration`)) +
+  geom_line(aes(group=`Day Off`, color=`Day Off`))+
+  ylim(c(4,12)) +
+  scale_x_continuous(breaks=sleep_data_Bishesta$Date) +
+  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  labs(title="Bishesta")
+```
+
+
+```{r}
+# Sleep Duration on Day Offs
+sleep_data_Bishesta_day_off <- sleep_data_Bishesta %>%
+  filter(Participant == "Bishesta" & `Day Off`=="Yes") %>%
+  select(Participant,Date,Day,`Day Off`,`Sleep Duration`)
+# Sleep Duration on Day Offs - Graph
+sleep_data_Bishesta_day_off %>%
+  ggplot(aes(x=Date, y=`Sleep Duration`))+
+  geom_line(color="red") +
+  geom_point(color="blue") +
+  ylim(c(4,12)) +
+  scale_x_continuous(breaks=sleep_data_Bishesta$Date) +
+  theme(axis.text.x = element_text(angle=45, hjust=1))
+
+
+```
+
+```{r}
+# Sleep Duration on Work Day
+sleep_data_Bishesta_day_off_no <- sleep_data_Bishesta %>%
+  filter(Participant == "Bishesta" & `Day Off`=="No") %>%
+  select(Participant,Date,Day,`Day Off`,`Sleep Duration`)
+# Sleep Duration on Work Day - Graph
+sleep_data_Bishesta_day_off_no %>%
+  ggplot(aes(x=Date, y=`Sleep Duration`))+
+  geom_line(color="red") +
+  geom_point(color="red") +
+  ylim(c(4,12))  +
+  scale_x_continuous(breaks=sleep_data_Bishesta$Date) +
+  theme(axis.text.x = element_text(angle=45, hjust=1))
+
+```
+
+# Sleep data for Prashansa
+
+
+```{r}
+# All Sleep Data for Prashansa
+sleep_data_Prashansa <- sleep_data %>%
+  filter(Participant == "Prashansa") %>%
+  select(Participant,Date,Day,`Day Off`,`Sleep Duration`) 
+print(sleep_data_Prashansa)
+
+# Sleeping pattern graph
+sleep_data_Prashansa_graph <- sleep_data_Prashansa %>%
+  ggplot(aes(x=Date, y=`Sleep Duration`)) +
+  geom_line(color="purple") +
+  geom_point(aes(color=`Day Off`)) +
+  ylim(c(4,12)) +
+  scale_x_continuous(breaks=sleep_data_Prashansa$Date) +
+  theme(axis.text.x = element_text(angle=45, hjust=1))+
+  labs(title="Prashansa")
+ggplotly(sleep_data_Prashansa_graph)
+```
+
+```{r}
+# Comparing amount of sleep during work day and non-working days
+sleep_data_Prashansa %>%
+  ggplot(aes(x=Date, y=`Sleep Duration`)) +
+  geom_line(aes(group=`Day Off`, color=`Day Off`))+
+  ylim(c(4,12)) +
+  scale_x_continuous(breaks=sleep_data_Prashansa$Date) +
+  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  labs(title="Prashansa")
+```
+
+
+```{r}
+# Sleep Duration on Day Offs
+sleep_data_Prashansa_day_off <- sleep_data_Prashansa %>%
+  filter(Participant == "Prashansa" & `Day Off`=="Yes") %>%
+  select(Participant,Date,Day,`Day Off`,`Sleep Duration`)
+# Sleep Duration on Day Offs - Graph
+sleep_data_Prashansa_day_off %>%
+  ggplot(aes(x=Date, y=`Sleep Duration`))+
+  geom_line(color="red") +
+  geom_point(color="blue") +
+  ylim(c(4,12)) +
+  scale_x_continuous(breaks=sleep_data_Prashansa$Date) +
+  theme(axis.text.x = element_text(angle=45, hjust=1))
+
+
+```
+
+```{r}
+# Sleep Duration on Work Day
+sleep_data_Prashansa_day_off_no <- sleep_data_Prashansa %>%
+  filter(Participant == "Prashansa" & `Day Off`=="No") %>%
+  select(Participant,Date,Day,`Day Off`,`Sleep Duration`)
+# Sleep Duration on Work Day - Graph
+sleep_data_Prashansa_day_off_no %>%
+  ggplot(aes(x=Date, y=`Sleep Duration`))+
+  geom_line(color="red") +
+  geom_point(color="red") +
+  ylim(c(4,12))  +
+  scale_x_continuous(breaks=sleep_data_Prashansa$Date) +
+  theme(axis.text.x = element_text(angle=45, hjust=1))
+
+```
+
+
+# T-test
+```{r}
+# T-test for Sashi
+t.test(sleep_data_Sashi$`Sleep Duration`, mu = 7, alternative = "less")
+# T-test for Rashmina
+t.test(sleep_data_Rashmina$`Sleep Duration`, mu = 7, alternative = "less")
+# T-test for Bishesta
+t.test(sleep_data_Bishesta$`Sleep Duration`, mu = 8, alternative = "less")
+# T-test for Rashmina
+t.test(sleep_data_Prashansa$`Sleep Duration`, mu = 9, alternative = "less")
+```
+
+
+# One sample proportion test
+
+```{r}
+prop.test(x=0, n=4, p=0.5, alternative="greater")
+```
+
+
+
+
